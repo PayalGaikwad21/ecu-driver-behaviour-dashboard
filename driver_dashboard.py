@@ -42,3 +42,57 @@ with tab3:
     st.plotly_chart(fig3, use_container_width=True)
 
 st.success("✅ Dashboard Loaded Successfully!")
+
+# --- SMART INSIGHTS SECTION ---
+st.subheader("🧠 Smart Insights & Recommendations")
+
+# Aggregate by driver to get summary
+summary = df.groupby("driver_id").agg(
+    avg_score=("driver_score", "mean"),
+    avg_temp=("engine_temp_peak", "mean"),
+    avg_tyre_wear=("tyre_wear_mm", "mean"),
+    trips=("trip_id", "count"),
+    total_cost=("maintenance_cost_inr", "sum")
+).reset_index()
+
+insights = []
+for _, row in summary.iterrows():
+    if row.avg_score < 60:
+        msg = f"⚠️ Driver {row.driver_id} shows risky driving patterns — frequent harsh braking and high engine temperature. Estimated maintenance ₹{row.total_cost:,}."
+    elif row.avg_score < 80:
+        msg = f"🔸 Driver {row.driver_id} has moderate driving quality. Monitoring required to reduce maintenance cost ₹{row.total_cost:,}."
+    else:
+        msg = f"✅ Driver {row.driver_id} maintains excellent driving habits — efficient fuel use and low wear. Keep it up!"
+    insights.append(msg)
+
+for i in insights:
+    st.markdown(i)
+
+# --- DATA VIEW TOGGLE ---
+st.subheader("📋 Detailed Data View")
+view_option = st.radio("Choose View:", ["Trip View", "Driver Summary"])
+
+if view_option == "Trip View":
+    st.dataframe(df)
+else:
+    st.dataframe(summary)
+
+# --- EXPORT SECTION ---
+st.subheader("📤 Export Analysis Results")
+
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button(
+    label="⬇️ Download Trip Data (CSV)",
+    data=csv,
+    file_name="driver_analysis.csv",
+    mime="text/csv",
+)
+
+csv_summary = summary.to_csv(index=False).encode("utf-8")
+st.download_button(
+    label="⬇️ Download Driver Summary (CSV)",
+    data=csv_summary,
+    file_name="driver_summary.csv",
+    mime="text/csv",
+)
+
